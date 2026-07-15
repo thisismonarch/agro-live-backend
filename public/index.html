@@ -1,0 +1,1295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌾 Agrofix - Market Intelligence Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <!-- Pyth Network SDK (for future integration) -->
+    <script src="https://cdn.jsdelivr.net/npm/@pythnetwork/client@latest/dist/index.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary-brown: #3E2723;
+            --gold-accent: #F39C12;
+            --teal-secondary: #1A5F7A;
+            --cream-bg: #F5F1E8;
+            --danger-red: #E74C3C;
+            --success-green: #27ae60;
+            --warning-orange: #F39C12;
+            --info-blue: #3498db;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666;
+            --bg-primary: #fff;
+            --bg-secondary: #f5f5f5;
+            --border-color: #ddd;
+            --solana-purple: #14F195;
+        }
+        
+        html.dark-mode {
+            --text-primary: #e8e8e8;
+            --text-secondary: #aaa;
+            --bg-primary: #1a1a1a;
+            --bg-secondary: #252525;
+            --border-color: #404040;
+            --cream-bg: #0f0f0f;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--cream-bg) 0%, #fafaf9 100%);
+            color: var(--text-primary);
+            transition: background 0.3s, color 0.3s;
+        }
+        
+        .login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, var(--primary-brown) 0%, var(--teal-secondary) 100%); }
+        .login-box { background: var(--bg-primary); padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); width: 100%; max-width: 400px; }
+        .login-box h1 { font-size: 28px; margin-bottom: 0.5rem; }
+        .login-box p { color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 14px; }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 0.5rem; }
+        input { width: 100%; padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 6px; font-size: 14px; background: var(--bg-primary); color: var(--text-primary); }
+        input:focus { outline: none; border-color: var(--gold-accent); }
+        .login-btn { width: 100%; padding: 0.75rem; background: linear-gradient(135deg, var(--primary-brown), var(--teal-secondary)); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 0.5rem; }
+        
+        .terminal { max-width: 1600px; margin: 0 auto; padding: 2rem 1rem; min-height: 100vh; }
+        
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: var(--bg-primary); padding: 1rem 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-wrap: wrap; gap: 1rem; }
+        .top-bar-left h2 { margin: 0; font-size: 20px; }
+        .top-bar-left p { margin: 0.25rem 0 0 0; color: var(--text-secondary); font-size: 12px; }
+        .top-bar-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+        
+        .currency-selector { display: flex; gap: 0.5rem; }
+        .currency-btn { padding: 0.5rem 0.75rem; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.2s; }
+        .currency-btn.active { background: var(--gold-accent); color: white; }
+        
+        .oracle-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 0.75rem; background: linear-gradient(135deg, rgba(20,241,149,0.1), rgba(0,212,170,0.1)); border: 1px solid var(--solana-purple); border-radius: 4px; font-size: 11px; font-weight: 600; color: var(--solana-purple); }
+        
+        .user-info { display: flex; align-items: center; gap: 0.75rem; }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, var(--gold-accent), var(--primary-brown)); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; }
+        
+        .theme-toggle, .logout-btn { padding: 0.5rem 1rem; border: 1px solid var(--border-color); background: var(--bg-secondary); cursor: pointer; font-size: 13px; border-radius: 4px; transition: all 0.2s; }
+        .theme-toggle:hover, .logout-btn:hover { background: var(--gold-accent); color: white; }
+        
+        .header { margin-bottom: 2rem; }
+        .header h1 { font-size: 32px; font-weight: 600; margin-bottom: 0.5rem; }
+        .header p { font-size: 14px; color: var(--text-secondary); }
+        
+        .controls-bar { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; background: var(--bg-primary); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        select { padding: 0.75rem 1rem; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; font-size: 14px; }
+        
+        .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .btn-toggle { padding: 0.75rem 1rem; border: 1px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); border-radius: 6px; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+        .btn-toggle.active { background: var(--gold-accent); color: white; }
+        .btn-small { padding: 0.5rem 1rem; background: var(--gold-accent); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        
+        .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+        .metric-card { background: var(--bg-primary); padding: 1.5rem; border-radius: 8px; border-left: 4px solid var(--gold-accent); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .metric-label { font-size: 11px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; margin-bottom: 0.75rem; }
+        .metric-value { font-size: 24px; font-weight: 700; }
+        .metric-unit { font-size: 12px; color: var(--text-secondary); margin-left: 4px; }
+        
+        .section { margin-bottom: 2rem; }
+        .section-title { font-size: 18px; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem; }
+        .content-box { background: var(--bg-primary); border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        
+        .chart-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; flex-wrap: wrap; }
+        .chart-tab { padding: 0.5rem 1rem; border: none; background: transparent; cursor: pointer; font-size: 13px; color: var(--text-secondary); border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .chart-tab.active { color: var(--text-primary); border-bottom-color: var(--gold-accent); }
+        .chart-container { position: relative; height: 350px; margin-bottom: 1rem; }
+        
+        .table-wrapper { overflow-x: auto; }
+        .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .data-table th { background: var(--bg-secondary); padding: 1rem; text-align: left; font-size: 12px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border-color); text-transform: uppercase; }
+        .data-table td { padding: 1rem; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .data-table tbody tr:hover { background: var(--bg-secondary); cursor: pointer; }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge-surplus { background: #d4edda; color: #155724; }
+        .badge-deficit { background: #f8d7da; color: #721c24; }
+        .badge-moderate { background: #fff3cd; color: #856404; }
+        
+        .routes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1.5rem; }
+        .route-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; transition: all 0.3s; }
+        .route-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .route-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; font-weight: 600; }
+        .route-arrow { color: var(--gold-accent); font-size: 18px; }
+        .route-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 13px; }
+        .meta-label { color: var(--text-secondary); font-size: 11px; text-transform: uppercase; margin-bottom: 0.25rem; }
+        .meta-value { font-weight: 600; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .terminal-container { background: #0d0d0d; border: 1px solid #333; border-radius: 6px; display: flex; flex-direction: column; height: 500px; font-family: monospace; color: #00ff00; padding: 1rem; }
+        .terminal-output { flex: 1; overflow-y: auto; margin-bottom: 1rem; font-size: 13px; white-space: pre-wrap; line-height: 1.5; }
+        .terminal-input { background: transparent; border: none; color: #00ff00; font-family: inherit; font-size: 13px; outline: none; caret-color: #00ff00; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: var(--bg-primary); padding: 2rem; border-radius: 12px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-close { float: right; font-size: 28px; cursor: pointer; color: var(--text-secondary); font-weight: bold; }
+        
+        .country-modal { max-width: 800px; }
+        .country-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+        .info-card { background: var(--bg-secondary); padding: 1rem; border-radius: 6px; }
+        
+        .watchlist-item { background: var(--bg-secondary); padding: 1rem; border-radius: 6px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+        
+        .alert-banner { background: #fff3cd; border: 1px solid #ffc107; border-left: 4px solid #ffc107; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; color: #856404; font-size: 13px; }
+        .alert-banner.success { background: #d4edda; border-color: #28a745; color: #155724; }
+        .alert-banner.danger { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+        .alert-banner.info { background: #cce5ff; border-color: #0d6efd; color: #055160; }
+        
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 2000; }
+        .toast { background: var(--bg-primary); border-left: 4px solid var(--gold-accent); padding: 1rem 1.5rem; border-radius: 6px; margin-bottom: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); animation: slideIn 0.3s ease-out; }
+        .toast.success { border-left-color: var(--success-green); }
+        .toast.error { border-left-color: var(--danger-red); }
+        .toast.info { border-left-color: var(--info-blue); }
+        .toast.warning { border-left-color: #f0ad4e; }
+        @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        
+        .load-more-btn { padding: 0.75rem 1.5rem; background: var(--gold-accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin: 1.5rem auto; display: block; }
+        
+        @media (max-width: 768px) {
+            .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+            .routes-grid { grid-template-columns: 1fr; }
+            .chart-container { height: 250px; }
+            .market-share-grid { grid-template-columns: 1fr !important; }
+        }
+    </style>
+</head>
+<body>
+    <div id="toastContainer" class="toast-container"></div>
+
+    <div id="loginScreen" class="login-screen">
+        <div class="login-box">
+            <h1>🌾 Agrofix</h1>
+            <p>Agricultural Commodity Market Intelligence — Live Insights Edition</p>
+            <p style="background: rgba(243,156,18,0.12); border: 1px solid var(--gold-accent, #F39C12); color: var(--gold-accent, #F39C12); padding: 0.6rem 0.85rem; border-radius: 8px; font-size: 13px; margin: 0.75rem 0 1rem;">🔓 Demo mode — enter any email and password to sign in</p>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" placeholder="viewer@agro.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="login-btn">Sign In</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="mainApp" style="display: none;">
+        <div class="terminal">
+            <div class="top-bar">
+                <div class="top-bar-left">
+                    <h2>🌾 Agrofix - Market Intelligence Edition</h2>
+                    <p>Real-time market data • Route optimization • Compliance & weather insights • Pyth oracle prices</p>
+                </div>
+                <div class="top-bar-right">
+                    <div class="currency-selector">
+                        <button class="currency-btn active" onclick="setCurrency('USD')">USD</button>
+                        <button class="currency-btn" onclick="setCurrency('NGN')">₦ NGN</button>
+                        <button class="currency-btn" onclick="setCurrency('GHS')">₵ GHS</button>
+                        <button class="currency-btn" onclick="setCurrency('KES')">KES</button>
+                    </div>
+                    <div class="oracle-badge" id="oracleBadge">
+                        <span>🔗 Live Oracle</span>
+                        <span id="oraclePrice">—</span>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-avatar" id="userAvatar">U</div>
+                        <button class="theme-toggle" onclick="toggleDarkMode()">🌙</button>
+                        <button class="logout-btn" onclick="handleLogout()">Logout</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header">
+                <h1>Market Dashboard</h1>
+                <p>Agricultural commodities market intelligence with technical analysis, trade routes, compliance and weather insights</p>
+            </div>
+
+            <div class="controls-bar">
+                <select id="productSelect" onchange="updateProduct()">
+                    <option value="maize">🌾 Maize</option>
+                    <option value="wheat">🌾 Wheat</option>
+                    <option value="rice">🍚 Rice</option>
+                    <option value="cocoa">🍫 Cocoa</option>
+                    <option value="coffee">☕ Coffee</option>
+                    <option value="palm">🌴 Palm Oil</option>
+                    <option value="soybean">🌱 Soybeans</option>
+                    <option value="cassava">🥔 Cassava</option>
+                </select>
+                <div id="globalLivePrice" style="font-weight:700; font-size:16px; color:var(--gold-accent); white-space:nowrap; display:none; align-items:center;">—</div>
+                <div class="btn-group" id="unitToggleGroup">
+                    <button class="btn-toggle active" onclick="setUnit('kg')">Price per kg</button>
+                    <button class="btn-toggle" onclick="setUnit('tonne')">Price per tonne</button>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-toggle active" onclick="switchTab('overview')">📊 Overview</button>
+                    <button class="btn-toggle" onclick="switchTab('routes')">🗺️ Routes</button>
+                    <button class="btn-toggle" onclick="switchTab('compliance')">✅ Compliance</button>
+                    <button class="btn-toggle" onclick="switchTab('weather')">🌦️ Weather</button>
+                    <button class="btn-toggle" onclick="switchTab('watchlist')">⭐ Watchlist</button>
+                    <button class="btn-toggle" onclick="switchTab('terminal')">⚡ Terminal</button>
+                </div>
+            </div>
+
+            <!-- OVERVIEW TAB -->
+            <div id="overviewTab" class="tab-content active">
+                <div id="alertsContainer"></div>
+                <div class="metrics-grid" id="metrics"></div>
+
+                <div class="section">
+                    <div class="section-title">📈 Technical Analysis Charts</div>
+                    <div class="content-box">
+                        <div class="chart-tabs">
+                            <button class="chart-tab active" onclick="switchChart('historical')">Historical Prices</button>
+                            <button class="chart-tab" onclick="switchChart('volatility')">Volatility</button>
+                            <button class="chart-tab" onclick="switchChart('flow')">Inflow/Outflow</button>
+                            <button class="chart-tab" onclick="switchChart('indicators')">RSI & SMA</button>
+                        </div>
+                        <div id="historicalChart" class="tab-content active">
+                            <div class="chart-container">
+                                <canvas id="priceChart"></canvas>
+                            </div>
+                        </div>
+                        <div id="volatilityChart" class="tab-content">
+                            <div class="chart-container">
+                                <canvas id="volChart"></canvas>
+                            </div>
+                        </div>
+                        <div id="flowChart" class="tab-content">
+                            <div class="chart-container">
+                                <canvas id="flowChartCanvas"></canvas>
+                            </div>
+                        </div>
+                        <div id="indicatorsChart" class="tab-content">
+                            <div class="chart-container">
+                                <canvas id="indicatorsChartCanvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🌍 Country Market Analysis</div>
+                    <div class="content-box">
+                        <button class="btn-small" style="margin-bottom: 1rem;" onclick="exportTableToCSV('country')">📥 Export CSV</button>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Country</th>
+                                        <th>Current Price</th>
+                                        <th>Volume</th>
+                                        <th>Status</th>
+                                        <th>Change</th>
+                                        <th>YoY</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="countryTable"></tbody>
+                            </table>
+                        </div>
+                        <button class="load-more-btn" id="loadMoreBtn" onclick="loadMoreCountries()" style="display: none;">Load More</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🌍 Global Market Share</div>
+                    <div class="content-box">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;" class="market-share-grid">
+                            <div class="chart-container" style="height: 280px;">
+                                <canvas id="marketShareChart"></canvas>
+                            </div>
+                            <div id="marketLegend" style="font-size: 14px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ROUTES TAB -->
+            <div id="routesTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">🚚 Route Optimization Summary</div>
+                    <div id="routeOptimization" class="routes-grid"></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">🗺️ Optimal Trade Routes</div>
+                    <div id="routes" class="routes-grid"></div>
+                </div>
+            </div>
+
+            <!-- COMPLIANCE TAB -->
+            <div id="complianceTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">⚠️ Compliance Alerts</div>
+                    <div class="content-box">
+                        <div id="complianceAlerts"></div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-title">📜 Tariff & Certification Status</div>
+                    <div class="content-box">
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Origin</th>
+                                        <th>Destination</th>
+                                        <th>Rules &amp; Certs</th>
+                                        <th>Tariff Rate</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="complianceTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WEATHER TAB -->
+            <div id="weatherTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">🌦️ Weather Impact & Yield</div>
+                    <div id="weatherContent" class="routes-grid"></div>
+                </div>
+            </div>
+
+            <!-- WATCHLIST TAB -->
+            <div id="watchlistTab" class="tab-content">
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Watched Items</div>
+                        <div class="metric-value" id="watchlistCount">0</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Active Alerts</div>
+                        <div class="metric-value" id="alertCount">0</div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">⭐ My Watchlist</div>
+                    <div class="content-box" id="watchlistItems">
+                        <p style="color: var(--text-secondary); font-style: italic;">Add items to watchlist from Overview</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-title">🔔 Price Alerts</div>
+                    <div class="content-box">
+                        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem;">
+                            <select id="alertCountry" style="flex:1; min-width:120px; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color, #ccc); background:var(--bg-secondary); color:inherit;"></select>
+                            <select id="alertDir" style="padding:0.5rem; border-radius:6px; border:1px solid var(--border-color, #ccc); background:var(--bg-secondary); color:inherit;">
+                                <option value="above">rises above</option>
+                                <option value="below">falls below</option>
+                            </select>
+                            <input type="number" id="alertPrice" placeholder="Target price" min="0" step="0.01" style="width:120px; padding:0.5rem; border-radius:6px; border:1px solid var(--border-color, #ccc); background:var(--bg-secondary); color:inherit;">
+                            <button class="btn-small" onclick="setAlert()">Set Alert</button>
+                        </div>
+                        <div id="priceAlerts">
+                            <p style="color: var(--text-secondary); font-style: italic;">No active alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TERMINAL TAB -->
+            <div id="terminalTab" class="tab-content">
+                <div class="section">
+                    <div class="section-title">⚡ AI Market Intelligence Terminal</div>
+                    <div class="content-box">
+                        <div class="terminal-container">
+                            <div class="terminal-output" id="terminalOutput" style="color:#87ceeb;">$ Agro Terminal v4.0 - Ultimate Complete Edition
+$ Solana + Pyth Oracle + Advanced Analytics
+$ Type 'help' for commands</div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <span style="color: #00ff00;">$</span>
+                                <input type="text" class="terminal-input" id="terminalInput" placeholder="Enter command..." onkeypress="handleTerminalInput(event)">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COUNTRY DETAILS MODAL -->
+    <div id="countryModal" class="modal">
+        <div class="modal-content country-modal">
+            <span class="modal-close" onclick="closeCountryModal();">×</span>
+            <h2 id="countryModalTitle"></h2>
+            <div id="countryModalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== PRODUCTS DATA ====================
+        let products = {};   // hydrated at runtime from /api/market
+
+        // ==================== STATE ====================
+        let currentProduct = 'maize';
+        let currentUnit = 'kg';
+        let currentCurrency = 'USD';
+        let currentTab = 'overview';
+        let currentChart = 'historical';
+        let charts = {};
+        let watchlist = [];
+        let priceAlertsList = [];
+        let alerts = [];
+        let countryCount = 5;
+        let oracleEnabled = false;
+        
+        let exchangeRates = { USD: 1, NGN: 1550, GHS: 15.5, KES: 135 };  // fallback; replaced by /api/market
+        const currencySymbols = { USD: '$', NGN: '₦', GHS: '₵', KES: 'KES ' };
+
+        // ==================== PYTH ORACLE PLACEHOLDER ====================
+        // TODO: Replace with real Pyth Network integration
+        async function initPythOracle() {
+            try {
+                // Placeholder for Pyth Network integration
+                // In production, connect to: https://api.pythnetwork.com/
+                /*
+                const connection = new solanaWeb3.Connection('https://api.devnet.solana.com');
+                const pythConnection = new PythConnection({
+                    endpoint: 'https://api.pythnetwork.com',
+                    commitment: 'confirmed'
+                });
+                
+                const price = await pythConnection.getLatestPriceData(
+                    'Crypto.SOL/USD' // Example feed ID
+                );
+                */
+                oracleEnabled = true;
+            } catch (e) {
+                console.log('Pyth Oracle not available - using mock prices');
+                oracleEnabled = false;
+            }
+        }
+
+        function updateOraclePrice() {
+            const product = products[currentProduct];
+            // Mock oracle price - replace with real Pyth data
+            const oraclePrice = (product.pricePerKg * (0.95 + Math.random() * 0.1)).toFixed(4);
+            document.getElementById('oraclePrice').textContent = formatUnitPrice(parseFloat(oraclePrice));
+        }
+
+        // ==================== LOGIN ====================
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const name = email.split('@')[0];
+            localStorage.setItem('userEmail', email);
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+            document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+            initApp();
+        }
+
+        function handleLogout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        // ==================== THEME & TOAST ====================
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark-mode'));
+            showToast(document.documentElement.classList.contains('dark-mode') ? 'Dark mode enabled' : 'Light mode enabled', 'info');
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // ==================== CURRENCY & UNITS ====================
+        function setCurrency(currency) {
+            currentCurrency = currency;
+            document.querySelectorAll('.currency-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            updateDashboard();
+            updateWatchlist();
+            showToast(`Currency changed to ${currency}`, 'info');
+        }
+
+        const TONNE_DISCOUNT = 0.97; // 3% bulk discount when pricing per tonne
+        function unitFactor() { return currentUnit === 'tonne' ? 1000 * TONNE_DISCOUNT : 1; }
+        function formatPrice(priceUSD) {
+            const converted = (priceUSD * exchangeRates[currentCurrency]).toFixed(2);
+            return `${currencySymbols[currentCurrency]}${converted}`;
+        }
+        // Commodity prices scale with the kg/tonne toggle (with bulk discount); money amounts (P&L, equity) use formatPrice
+        function formatUnitPrice(perKgUSD) {
+            const converted = (perKgUSD * exchangeRates[currentCurrency] * unitFactor());
+            return `${currencySymbols[currentCurrency]}${converted.toFixed(2)}`;
+        }
+        function fromDisplayPrice(displayVal) {
+            return displayVal / (exchangeRates[currentCurrency] * unitFactor());
+        }
+        // Freight is quoted per tonne; show per kg or per tonne with currency
+        function formatFreight(perTonneUSD) {
+            const sym = currencySymbols[currentCurrency];
+            const rate = exchangeRates[currentCurrency];
+            if (currentUnit === 'kg') return `${sym}${(perTonneUSD * rate / 1000).toFixed(3)}/kg`;
+            return `${sym}${(perTonneUSD * rate).toFixed(2)}/t`;
+        }
+
+        function updateProduct() {
+            currentProduct = document.getElementById('productSelect').value;
+            countryCount = 5;
+            updateDashboard();
+            checkVolatility();
+        }
+
+        function setUnit(unit) {
+            currentUnit = unit;
+            document.querySelectorAll('.btn-toggle').forEach(b => {
+                if (b.textContent.includes('Price')) b.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            updateDashboard();
+            updateWatchlist();
+        }
+
+        // ==================== TABS & CHARTS ====================
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab-content').forEach(e => e.classList.remove('active'));
+            document.getElementById(tab + 'Tab').classList.add('active');
+            document.querySelectorAll('.btn-toggle').forEach(b => {
+                const text = b.textContent.trim();
+                if (text.includes('Overview')) b.classList.toggle('active', tab === 'overview');
+                if (text.includes('Routes')) b.classList.toggle('active', tab === 'routes');
+                if (text.includes('Compliance')) b.classList.toggle('active', tab === 'compliance');
+                if (text.includes('Weather')) b.classList.toggle('active', tab === 'weather');
+                if (text.includes('Watchlist')) b.classList.toggle('active', tab === 'watchlist');
+                if (text.includes('Terminal')) b.classList.toggle('active', tab === 'terminal');
+            });
+            const ug = document.getElementById('unitToggleGroup');
+            if (ug) ug.style.display = ['compliance', 'weather', 'terminal'].includes(tab) ? 'none' : '';
+            const glp = document.getElementById('globalLivePrice');
+            if (glp) glp.style.display = (tab === 'watchlist') ? 'flex' : 'none';
+            const ps = document.getElementById('productSelect');
+            if (ps) ps.style.display = (tab === 'terminal') ? 'none' : '';
+        }
+
+        function switchChart(chart) {
+            currentChart = chart;
+            document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('#historicalChart, #volatilityChart, #flowChart, #indicatorsChart').forEach(e => e.classList.remove('active'));
+            if (chart === 'historical') document.getElementById('historicalChart').classList.add('active');
+            else if (chart === 'volatility') document.getElementById('volatilityChart').classList.add('active');
+            else if (chart === 'flow') document.getElementById('flowChart').classList.add('active');
+            else if (chart === 'indicators') document.getElementById('indicatorsChart').classList.add('active');
+        }
+
+        // ==================== TECHNICAL ANALYSIS ====================
+        function calculateSMA(prices, period = 20) {
+            const sma = [];
+            for (let i = 0; i < prices.length; i++) {
+                if (i < period - 1) {
+                    sma.push(null);
+                } else {
+                    const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                    sma.push(sum / period);
+                }
+            }
+            return sma;
+        }
+
+        function calculateRSI(prices, period = 14) {
+            const rsi = [];
+            let gains = 0, losses = 0;
+            for (let i = 0; i < prices.length; i++) {
+                if (i === 0) {
+                    rsi.push(50);
+                } else {
+                    const diff = prices[i] - prices[i - 1];
+                    if (diff > 0) gains += diff;
+                    else losses += Math.abs(diff);
+                    
+                    if (i === period) {
+                        const rs = (gains / period) / (losses / period);
+                        rsi.push(100 - (100 / (1 + rs)));
+                    } else if (i > period) {
+                        const avgGain = (gains / period);
+                        const avgLoss = (losses / period);
+                        const rs = avgGain / avgLoss;
+                        rsi.push(100 - (100 / (1 + rs)));
+                    }
+                }
+            }
+            return rsi;
+        }
+
+        // ==================== DASHBOARD ====================
+        function updateDashboard() {
+            const product = products[currentProduct];
+            const priceMultiplier = currentUnit === 'kg' ? 1 : 1000;
+            const unitLabel = currentUnit === 'kg' ? 'kg' : 'tonne';
+            
+            const totalInflow = product.inflow.reduce((a,b) => a+b, 0);
+            const totalOutflow = product.outflow.reduce((a,b) => a+b, 0);
+            const netFlow = totalInflow - totalOutflow;
+            const avgVol = (product.volatility.reduce((a,b) => a+b) / product.volatility.length).toFixed(2);
+            const rsi = calculateRSI(product.yearlyPrices);
+            const rsiValue = rsi[rsi.length - 1].toFixed(0);
+
+            document.getElementById('metrics').innerHTML = `
+                <div class="metric-card">
+                    <div class="metric-label">Current Price</div>
+                    <div class="metric-value">${formatUnitPrice(product.pricePerKg)}<span class="metric-unit">/${unitLabel}</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Volatility</div>
+                    <div class="metric-value">${avgVol}<span class="metric-unit">%</span></div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">RSI (14)</div>
+                    <div class="metric-value" style="color: ${rsiValue > 70 ? 'var(--danger-red)' : rsiValue < 30 ? 'var(--success-green)' : 'inherit'};">${rsiValue}</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Net Position</div>
+                    <div class="metric-value" style="color: ${netFlow >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${(netFlow/1000).toFixed(1)}<span class="metric-unit">K tonnes</span></div>
+                </div>
+            `;
+
+            updateCharts(product);
+            updateCountries(product);
+            updateMarketShare(product);
+            updateRoutes(product);
+            updateRouteOptimization(product);
+            updateCompliance(product);
+            updateWeather(product);
+            const glp = document.getElementById('globalLivePrice');
+            if (glp) glp.textContent = `${product.name}: ${formatUnitPrice(product.pricePerKg)} /${currentUnit}`;
+
+            updateAlerts();
+            updateOraclePrice();
+            updatePriceAlerts();
+            checkAlerts();
+        }
+
+        // ==================== CHARTS ====================
+        function updateCharts(product) {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: 'var(--text-primary)' } } },
+                scales: {
+                    y: { ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } },
+                    x: { ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } }
+                }
+            };
+
+            // Price Chart
+            if (charts.price) charts.price.destroy();
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            charts.price = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['J','F','M','A','M','J','J','A','S','O','N','D'],
+                    datasets: [{
+                        label: `${product.name} (USD/kg)`,
+                        data: product.yearlyPrices,
+                        borderColor: '#F39C12',
+                        backgroundColor: 'rgba(243,156,18,0.1)',
+                        tension: 0.4,
+                        fill: true,
+                        borderWidth: 2
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Volatility Chart
+            if (charts.volatility) charts.volatility.destroy();
+            const vctx = document.getElementById('volChart').getContext('2d');
+            charts.volatility = new Chart(vctx, {
+                type: 'bar',
+                data: {
+                    labels: ['J','F','M','A','M','J','J','A','S','O','N','D'],
+                    datasets: [{ label: 'Volatility (%)', data: product.volatility, backgroundColor: '#1A5F7A' }]
+                },
+                options: chartOptions
+            });
+
+            // Inflow/Outflow Chart
+            if (charts.flow) charts.flow.destroy();
+            const fctx = document.getElementById('flowChartCanvas').getContext('2d');
+            charts.flow = new Chart(fctx, {
+                type: 'bar',
+                data: {
+                    labels: ['M1','M2','M3','M4','M5','M6'],
+                    datasets: [
+                        { label: 'Inflow', data: product.inflow, backgroundColor: '#27ae60' },
+                        { label: 'Outflow', data: product.outflow, backgroundColor: '#E74C3C' }
+                    ]
+                },
+                options: chartOptions
+            });
+
+            // RSI & SMA Indicators Chart
+            if (charts.indicators) charts.indicators.destroy();
+            const ictx = document.getElementById('indicatorsChartCanvas').getContext('2d');
+            const smaData = calculateSMA(product.yearlyPrices);
+            const rsiData = calculateRSI(product.yearlyPrices);
+            charts.indicators = new Chart(ictx, {
+                type: 'line',
+                data: {
+                    labels: ['J','F','M','A','M','J','J','A','S','O','N','D'],
+                    datasets: [
+                        {
+                            label: 'Price',
+                            data: product.yearlyPrices,
+                            borderColor: '#F39C12',
+                            borderWidth: 2,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'SMA(20)',
+                            data: smaData,
+                            borderColor: '#1A5F7A',
+                            borderWidth: 1,
+                            borderDash: [5, 5],
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: { ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' }, title: { display: true, text: 'Price (USD/kg)' } },
+                        x: { ticks: { color: 'var(--text-secondary)' }, grid: { color: 'var(--border-color)' } }
+                    }
+                }
+            });
+        }
+
+        // ==================== TABLES ====================
+        function updateCountries(product) {
+            let html = '';
+            const countries = Object.entries(product.countries).slice(0, countryCount);
+            countries.forEach(([country, data]) => {
+                const badge = data.status === 'Surplus' ? 'badge-surplus' : data.status === 'Deficit' ? 'badge-deficit' : 'badge-moderate';
+                html += `<tr onclick="openCountryModal('${country}', ${JSON.stringify(data).replace(/"/g, '&quot;')})">
+                    <td style="font-weight:500; cursor: pointer;">${country}</td>
+                    <td>${formatUnitPrice(data.price)}</td>
+                    <td>${data.volume}K tonnes</td>
+                    <td><span class="badge ${badge}">${data.status}</span></td>
+                    <td style="color: ${data.change >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${data.change >= 0 ? '+' : ''}${data.change}%</td>
+                    <td style="color: ${data.yoy >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${data.yoy >= 0 ? '+' : ''}${data.yoy}%</td>
+                    <td><button class="btn-small" onclick="addToWatchlist('${country}', '${currentProduct}'); event.stopPropagation();">⭐</button></td>
+                </tr>`;
+            });
+            document.getElementById('countryTable').innerHTML = html;
+
+            if (Object.keys(product.countries).length > countryCount) {
+                document.getElementById('loadMoreBtn').style.display = 'block';
+            } else {
+                document.getElementById('loadMoreBtn').style.display = 'none';
+            }
+        }
+
+        function loadMoreCountries() {
+            countryCount += 5;
+            updateCountries(products[currentProduct]);
+        }
+
+        function updateRoutes(product) {
+            let html = '';
+            product.routes.forEach(r => {
+                html += `<div class="route-card">
+                    <div class="route-header"><span>${r.from}</span><span class="route-arrow">→</span><span>${r.to}</span></div>
+                    <div class="route-meta">
+                        <div><div class="meta-label">Freight</div><div class="meta-value">${formatFreight(r.freight)}</div></div>
+                        <div><div class="meta-label">Transit</div><div class="meta-value">${r.transit}</div></div>
+                        <div><div class="meta-label">Mode</div><div class="meta-value">${r.mode}</div></div>
+                        <div><div class="meta-label">Savings</div><div class="meta-value" style="color:var(--success-green);">+${r.savings}%</div></div>
+                    </div>
+                    <div style="margin-top:0.75rem; padding:0.6rem 0.75rem; background:var(--bg-secondary); border-left:3px solid var(--gold-accent); border-radius:4px; font-size:12px; color:var(--text-secondary);">💡 ${generateInsights(product, r)}</div>
+                </div>`;
+            });
+            document.getElementById('routes').innerHTML = html;
+        }
+
+        function updateMarketShare(product) {
+            if (!product.marketShare || !document.getElementById('marketShareChart')) return;
+            const entries = Object.entries(product.marketShare);
+            const colors = ['#F39C12', '#1A5F7A', '#27ae60', '#E74C3C', '#9b59b6'];
+            if (charts.marketShare) charts.marketShare.destroy();
+            const ctx = document.getElementById('marketShareChart').getContext('2d');
+            charts.marketShare = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: entries.map(e => e[0]),
+                    datasets: [{
+                        data: entries.map(e => e[1]),
+                        backgroundColor: colors,
+                        borderColor: 'var(--bg-primary)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+            document.getElementById('marketLegend').innerHTML = entries.map(([country, share], i) =>
+                `<div style="margin: 0.6rem 0; display:flex; align-items:center;"><span style="display:inline-block; width:12px; height:12px; border-radius:2px; background:${colors[i % colors.length]}; margin-right:0.6rem;"></span><strong style="min-width:90px; display:inline-block;">${country}</strong> ${share}%</div>`
+            ).join('');
+        }
+
+        function updateRouteOptimization(product) {
+            const container = document.getElementById('routeOptimization');
+            if (!container) return;
+            const totalRoutes = product.routes.length;
+            const avgSavings = (product.routes.reduce((a, r) => a + r.savings, 0) / totalRoutes).toFixed(1);
+            const totalFreight = product.routes.reduce((a, r) => a + r.freight, 0);
+            const bestRoute = product.routes.reduce((best, r) => r.savings > best.savings ? r : best, product.routes[0]);
+
+            let html = `
+                <div class="route-card">
+                    <div class="route-header"><span>📊 Summary</span></div>
+                    <div class="route-meta">
+                        <div><div class="meta-label">Avg Savings</div><div class="meta-value" style="color:var(--success-green);">+${avgSavings}%</div></div>
+                        <div><div class="meta-label">Total Routes</div><div class="meta-value">${totalRoutes}</div></div>
+                        <div><div class="meta-label">Combined Freight</div><div class="meta-value">${formatFreight(totalFreight)}</div></div>
+                        <div><div class="meta-label">Best Lane</div><div class="meta-value">${bestRoute.from}→${bestRoute.to}</div></div>
+                    </div>
+                    <div style="width:100%;height:8px;background:var(--bg-secondary);border-radius:4px;margin-top:0.9rem;overflow:hidden;">
+                        <div style="width:${Math.min(avgSavings * 4, 100)}%;height:100%;background:var(--success-green);"></div>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-secondary);margin-top:0.5rem;">Optimization score based on average cost savings across all active lanes.</div>
+                </div>`;
+            container.innerHTML = html;
+        }
+
+        function updateCompliance(product) {
+            let alerts = '';
+            product.compliance.forEach(c => {
+                const color = c.status === 'Approved' ? '#d4edda' : '#cce5ff';
+                alerts += `<div class="alert-banner" style="background:${color}; border-left-color: ${c.status === 'Approved' ? '#28a745' : '#0d6efd'};"><strong>${c.from} → ${c.to}:</strong> ${c.rules} | Tariff: ${c.tariff} | <span class="badge">${c.status}</span></div>`;
+            });
+            document.getElementById('complianceAlerts').innerHTML = alerts;
+
+            let table = '';
+            product.compliance.forEach(c => {
+                table += `<tr><td>${c.from}</td><td>${c.to}</td><td>${c.rules}</td><td>${c.tariff}</td><td><span class="badge">${c.status}</span></td></tr>`;
+            });
+            document.getElementById('complianceTable').innerHTML = table;
+        }
+
+        function updateWeather(product) {
+            let html = '';
+            Object.entries(product.weather).forEach(([region, data]) => {
+                const riskColor = data.risk === 'High' ? '#E74C3C' : data.risk === 'Medium' ? '#F39C12' : '#27ae60';
+                html += `<div class="route-card">
+                    <div style="font-weight:600;margin-bottom:1rem;color:var(--text-primary);">${region}</div>
+                    <div style="font-size:14px;margin-bottom:0.5rem;"><strong>Condition:</strong> ${data.condition}</div>
+                    <div style="margin-bottom:0.5rem;"><div class="meta-label">Yield Forecast</div><div class="meta-value">${data.yield}%</div></div>
+                    <div style="width:100%;height:6px;background:var(--bg-secondary);border-radius:3px;margin-bottom:1rem;">
+                        <div style="width:${data.yield}%;height:100%;background:${riskColor};border-radius:3px;"></div>
+                    </div>
+                    <span class="badge" style="background:${riskColor}20;color:${riskColor};display:inline-block;">Risk: ${data.risk}</span>
+                </div>`;
+            });
+            document.getElementById('weatherContent').innerHTML = html;
+        }
+
+        // ==================== WATCHLIST & ALERTS ====================
+        function addToWatchlist(country, product) {
+            const item = { country, product, priceAdded: products[product].pricePerKg, dateAdded: new Date() };
+            if (!watchlist.find(w => w.country === country && w.product === product)) {
+                watchlist.push(item);
+                updateWatchlist();
+                showToast(`${country} added to watchlist!`, 'success');
+            } else {
+                showToast(`${country} already in watchlist`, 'info');
+            }
+        }
+
+        function removeFromWatchlist(country, product) {
+            watchlist = watchlist.filter(w => !(w.country === country && w.product === product));
+            updateWatchlist();
+            showToast('Removed from watchlist', 'info');
+        }
+
+        function updateWatchlist() {
+            document.getElementById('watchlistCount').textContent = watchlist.length;
+            let html = '';
+            watchlist.forEach(item => {
+                const currentPrice = products[item.product].pricePerKg;
+                const change = ((currentPrice - item.priceAdded) / item.priceAdded * 100).toFixed(2);
+                const changeColor = change >= 0 ? 'var(--success-green)' : 'var(--danger-red)';
+                html += `<div class="watchlist-item">
+                    <div>
+                        <strong>${item.country}</strong> - ${products[item.product].name}
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 0.25rem;">Added: ${item.dateAdded.toLocaleDateString()}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="color: ${changeColor}; font-weight: 600;">${formatUnitPrice(currentPrice)}</div>
+                        <div style="font-size: 12px; color: ${changeColor};">${change >= 0 ? '+' : ''}${change}%</div>
+                        <button class="btn-small" style="margin-top: 0.5rem;" onclick="removeFromWatchlist('${item.country}', '${item.product}')">Remove</button>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('watchlistItems').innerHTML = html || '<p style="color: var(--text-secondary); font-style: italic;">No items in watchlist</p>';
+        }
+
+        function updateAlerts() {
+            const alertsHtml = [];
+            const product = products[currentProduct];
+            
+            if (product.volatility[0] > 3) {
+                alertsHtml.push(`<div class="alert-banner info">📊 High volatility (${product.volatility[0]}%) detected in ${product.name}</div>`);
+            }
+            
+            const rsi = calculateRSI(product.yearlyPrices);
+            const rsiValue = rsi[rsi.length - 1];
+            if (rsiValue > 70) {
+                alertsHtml.push(`<div class="alert-banner warning">⚠️ RSI overbought (${rsiValue.toFixed(0)}) - Potential reversal</div>`);
+            } else if (rsiValue < 30) {
+                alertsHtml.push(`<div class="alert-banner warning">⚠️ RSI oversold (${rsiValue.toFixed(0)}) - Potential bounce</div>`);
+            }
+
+            document.getElementById('alertsContainer').innerHTML = alertsHtml.join('');
+            document.getElementById('alertCount').textContent = alertsHtml.length;
+        }
+
+        // ==================== PRICE ALERTS ====================
+        function populateAlertCountries() {
+            const sel = document.getElementById('alertCountry');
+            if (!sel) return;
+            const prev = sel.value;
+            const countries = Object.keys(products[currentProduct].countries);
+            sel.innerHTML = countries.map(c => `<option value="${c}">${c}</option>`).join('');
+            if (countries.includes(prev)) sel.value = prev;
+        }
+
+        function setAlert() {
+            const country = document.getElementById('alertCountry').value;
+            const dir = document.getElementById('alertDir').value;
+            const typed = parseFloat(document.getElementById('alertPrice').value);
+            if (!typed || typed <= 0) {
+                showToast('Enter a valid alert price', 'error');
+                return;
+            }
+            const target = fromDisplayPrice(typed); // store internally as USD per kg
+            const exists = priceAlertsList.find(a => a.product === currentProduct && a.country === country && a.dir === dir && a.target === target);
+            if (exists) {
+                showToast('That alert already exists', 'info');
+                return;
+            }
+            priceAlertsList.push({ product: currentProduct, country, dir, target });
+            document.getElementById('alertPrice').value = '';
+            updatePriceAlerts();
+            showToast(`✓ Alert set: ${products[currentProduct].name} ${country} ${dir} ${formatUnitPrice(target)}`, 'success');
+        }
+
+        function removeAlert(index) {
+            priceAlertsList.splice(index, 1);
+            updatePriceAlerts();
+            showToast('Alert removed', 'info');
+        }
+
+        function updatePriceAlerts() {
+            populateAlertCountries();
+            const container = document.getElementById('priceAlerts');
+            if (!container) return;
+            if (priceAlertsList.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); font-style: italic;">No active alerts</p>';
+                return;
+            }
+            container.innerHTML = priceAlertsList.map((a, i) => {
+                const current = products[a.product].countries[a.country]
+                    ? products[a.product].countries[a.country].price
+                    : products[a.product].pricePerKg;
+                const triggered = a.dir === 'above' ? current >= a.target : current <= a.target;
+                const statusColor = triggered ? 'var(--danger-red)' : 'var(--text-secondary)';
+                const statusLabel = triggered ? '🔴 TRIGGERED' : '🟢 Watching';
+                return `<div class="watchlist-item">
+                    <div>
+                        <strong>${products[a.product].name} · ${a.country}</strong>
+                        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 0.25rem;">Alert when price ${a.dir} ${formatUnitPrice(a.target)}</div>
+                        <div style="font-size: 12px; color: ${statusColor}; margin-top: 0.25rem;">${statusLabel} · now ${formatUnitPrice(current)}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <button class="btn-small" onclick="removeAlert(${i})">Remove</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function checkAlerts() {
+            priceAlertsList.forEach(a => {
+                const current = products[a.product].countries[a.country]
+                    ? products[a.product].countries[a.country].price
+                    : products[a.product].pricePerKg;
+                const triggered = a.dir === 'above' ? current >= a.target : current <= a.target;
+                if (triggered && !a._notified) {
+                    a._notified = true;
+                    showToast(`🔔 ALERT: ${products[a.product].name} ${a.country} ${a.dir} ${formatUnitPrice(a.target)} (now ${formatUnitPrice(current)})`, 'warning');
+                } else if (!triggered) {
+                    a._notified = false;
+                }
+            });
+        }
+
+        // ==================== MARKET VOLATILITY POPUPS ====================
+        function checkVolatility() {
+            const product = products[currentProduct];
+            const avgVol = product.volatility.reduce((a, b) => a + b, 0) / product.volatility.length;
+            const latestVol = product.volatility[product.volatility.length - 1];
+            if (latestVol > 3) {
+                showToast(`⚠️ HIGH VOLATILITY: ${latestVol.toFixed(1)}% spike detected in ${product.name}`, 'error');
+            } else if (avgVol > 2.7) {
+                showToast(`📊 ELEVATED VOLATILITY: ${avgVol.toFixed(1)}% average in ${product.name}`, 'warning');
+            } else {
+                showToast(`📈 ${product.name} market stable — ${avgVol.toFixed(1)}% avg volatility`, 'info');
+            }
+        }
+
+        // Periodic market-event popups (the "other popups")
+        const marketEvents = [
+            { msg: 'Freight rates easing on key Atlantic routes', type: 'success' },
+            { msg: 'New export quotas announced — watch supply spreads', type: 'warning' },
+            { msg: 'Weather risk rising in major growing regions', type: 'warning' },
+            { msg: 'Demand surge reported in deficit markets', type: 'info' },
+            { msg: 'Oracle price feed refreshed from Pyth Network', type: 'info' }
+        ];
+        function startMarketEventPopups() {
+            if (window._marketEventTimer) return;
+            window._marketEventTimer = setInterval(() => {
+                if (document.hidden) return;
+                const ev = marketEvents[Math.floor(Math.random() * marketEvents.length)];
+                showToast(`📰 ${ev.msg}`, ev.type);
+                checkAlerts();
+            }, 45000);
+        }
+
+        // ==================== ROUTE INSIGHTS ====================
+        function generateInsights(product, route) {
+            const originData = product.countries[route.from] || { status: 'Moderate', change: 0 };
+            const insights = [
+                `${route.from} ${originData.status.toLowerCase()} supply meets demand in ${route.to}. Lock in freight rates.`,
+                `Optimal window: ${route.from}'s ${originData.change >= 0 ? 'rising' : 'falling'} prices + ${route.transit} transit = advantage. Ship within 48hrs.`,
+                `${route.mode} transport delivers ${route.savings}% cost savings. Export volumes peaking.`,
+                `Regulatory alignment strong. Book early to secure freight before any surge.`
+            ];
+            return insights[Math.floor(Math.random() * insights.length)];
+        }
+
+        // ==================== COUNTRY MODAL ====================
+        function openCountryModal(country, data) {
+            document.getElementById('countryModalTitle').textContent = `📍 ${country} - ${products[currentProduct].name} Market`;
+            
+            let insights = 'Market showing stable conditions with predictable supply patterns.';
+            if (data.change > 2) insights = 'Market is experiencing rapid growth with increasing demand.';
+            if (data.yoy < -2) insights = 'Year-over-year decline indicates market contraction.';
+            if (data.status === 'Surplus') insights = 'High supply indicates potential price pressure.';
+            if (data.status === 'Deficit') insights = 'Supply shortage may support prices upward.';
+
+            const content = `
+<div class="country-info">
+    <div class="info-card">
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">Current Price</div>
+        <div style="font-size: 24px; font-weight: 700;">${formatUnitPrice(data.price)}</div>
+    </div>
+    <div class="info-card">
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">Market Status</div>
+        <div style="font-size: 18px; font-weight: 600;"><span class="badge badge-${data.status === 'Surplus' ? 'surplus' : data.status === 'Deficit' ? 'deficit' : 'moderate'}">${data.status}</span></div>
+    </div>
+    <div class="info-card">
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">Trade Volume</div>
+        <div style="font-size: 20px; font-weight: 700;">${data.volume}K tonnes</div>
+    </div>
+    <div class="info-card">
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">Recent Change</div>
+        <div style="font-size: 18px; font-weight: 600; color: ${data.change >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${data.change >= 0 ? '+' : ''}${data.change}%</div>
+    </div>
+    <div class="info-card">
+        <div style="font-size: 12px; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem;">Year-over-Year</div>
+        <div style="font-size: 18px; font-weight: 600; color: ${data.yoy >= 0 ? 'var(--success-green)' : 'var(--danger-red)'};">${data.yoy >= 0 ? '+' : ''}${data.yoy}%</div>
+    </div>
+</div>
+
+<h3 style="margin: 1.5rem 0 1rem;">Market Insights</h3>
+<p style="font-size: 13px; line-height: 1.6; color: var(--text-secondary);">${insights}</p>
+
+<div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+    <button class="btn-small" style="flex: 1;" onclick="addToWatchlist('${country}', '${currentProduct}'); closeCountryModal();">⭐ Add to Watchlist</button>
+</div>`;
+
+            document.getElementById('countryModalContent').innerHTML = content;
+            document.getElementById('countryModal').classList.add('active');
+        }
+
+        function closeCountryModal() {
+            document.getElementById('countryModal').classList.remove('active');
+        }
+
+        // ==================== EXPORT ====================
+        function exportTableToCSV(type) {
+            let csv = '';
+            let filename = '';
+
+            if (type === 'country') {
+                csv = 'Country,Price,Volume,Status,Change,YoY\n';
+                const product = products[currentProduct];
+                Object.entries(product.countries).forEach(([country, data]) => {
+                    csv += `${country},${data.price},${data.volume},${data.status},${data.change},${data.yoy}\n`;
+                });
+                filename = `countries-${currentProduct}.csv`;
+            }
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            showToast('File exported successfully', 'success');
+        }
+
+        // ==================== TERMINAL ====================
+        async function handleTerminalInput(e) {
+            if (e.key !== 'Enter') return;
+            const input = document.getElementById('terminalInput').value.trim();
+            if (!input) return;
+
+            const output = document.getElementById('terminalOutput');
+            output.innerHTML += `\n<span style="color:#00ff00;">$ ${input}</span>`;
+
+            let response = '';
+            const product = products[currentProduct];
+
+            if (input.toLowerCase() === 'help') {
+                response = `Available commands:
+  price - Current commodity price
+  analyze - Technical analysis
+  routes [country] - Trade routes
+  watchlist - Watchlist items
+  oracle - Oracle price status
+  rsi - RSI indicator`;
+            } else if (input.toLowerCase() === 'price') {
+                response = `${product.name}: ${formatPrice(product.pricePerKg)}/kg | Vol: ${(product.volatility.reduce((a,b)=>a+b)/product.volatility.length).toFixed(2)}% | Inflow: ${(product.inflow.reduce((a,b)=>a+b)/1000).toFixed(1)}K tonnes`;
+            } else if (input.toLowerCase() === 'rsi') {
+                const rsi = calculateRSI(product.yearlyPrices);
+                const rsiValue = rsi[rsi.length - 1].toFixed(0);
+                response = `RSI (14): ${rsiValue} | ${rsiValue > 70 ? 'OVERBOUGHT' : rsiValue < 30 ? 'OVERSOLD' : 'NEUTRAL'}`;
+            } else if (input.toLowerCase() === 'watchlist') {
+                response = `Watchlist Items: ${watchlist.length}${watchlist.length > 0 ? '\n' + watchlist.map(w => `  ${w.country} (${w.product})`).join('\n') : ''}`;
+            } else if (input.toLowerCase() === 'oracle') {
+                response = `Oracle Status: ${oracleEnabled ? 'CONNECTED' : 'DISABLED (Using mock prices)'}`;
+            } else if (input.toLowerCase().startsWith('routes ')) {
+                const country = input.replace('routes ', '');
+                const routes = product.routes.filter(r => r.from === country || r.to === country);
+                response = routes.length ? routes.map(r => `  ${r.from} → ${r.to}: $${r.freight}/t, ${r.transit}`).join('\n') : 'No routes found';
+            } else if (input.toLowerCase() === 'analyze') {
+                const rsi = calculateRSI(product.yearlyPrices);
+                const sma = calculateSMA(product.yearlyPrices);
+                response = `Analysis for ${product.name}:
+  RSI: ${rsi[rsi.length - 1].toFixed(0)}
+  SMA(20): ${sma[sma.length - 1].toFixed(4)}
+  Price: ${formatPrice(product.pricePerKg)}
+  Volatility: ${(product.volatility.reduce((a,b)=>a+b)/product.volatility.length).toFixed(2)}%`;
+            } else {
+                response = 'Command not recognized. Type "help" for available commands.';
+            }
+
+            output.innerHTML += `\n<span style="color:#69ff69;">${response}</span>`;
+            document.getElementById('terminalInput').value = '';
+            output.scrollTop = output.scrollHeight;
+        }
+
+        // ==================== INIT ====================
+        // ==================== LIVE DATA LOADER ====================
+        async function loadMarket() {
+            const res = await fetch('/api/market', { cache: 'no-store' });
+            if (!res.ok) throw new Error('market fetch failed: ' + res.status);
+            const data = await res.json();
+            products = data.products || {};
+            if (data.exchangeRates) exchangeRates = data.exchangeRates;
+            window.__marketMeta = data.meta || {};
+            renderDataStatus(window.__marketMeta);
+        }
+
+        function renderDataStatus(meta) {
+            const app = document.getElementById('mainApp');
+            if (!app) return;
+            let bar = document.getElementById('dataStatus');
+            if (!bar) {
+                bar = document.createElement('div');
+                bar.id = 'dataStatus';
+                bar.style.cssText = 'font-size:12px;padding:8px 16px;text-align:center;font-weight:600;';
+                app.insertBefore(bar, app.firstChild);
+            }
+            const live = meta && meta.live && meta.live.commodities;
+            const when = meta && meta.updatedAt ? new Date(meta.updatedAt).toLocaleString() : '';
+            if (live) {
+                bar.style.background = 'rgba(15,157,140,0.12)';
+                bar.style.color = '#0B6B5F';
+                bar.textContent = '\u25CF  Live market data \u00B7 updated ' + when +
+                    (meta.sampleCommodities && meta.sampleCommodities.length ? '  \u00B7  benchmark prices for: ' + meta.sampleCommodities.join(', ') : '');
+            } else {
+                bar.style.background = 'rgba(219,165,58,0.15)';
+                bar.style.color = '#8A6512';
+                bar.textContent = '\u25CF  Sample data \u2014 add a commodity API key to go live (see README).';
+            }
+        }
+
+        async function initApp() {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.documentElement.classList.add('dark-mode');
+            }
+            try {
+                await loadMarket();
+            } catch (err) {
+                const app = document.getElementById('mainApp');
+                if (app) {
+                    const bar = document.createElement('div');
+                    bar.style.cssText = 'font-size:13px;padding:12px 16px;text-align:center;font-weight:600;background:rgba(255,107,83,0.15);color:#B23A22;';
+                    bar.textContent = '\u26A0  Could not reach the data service. Is the backend running? (npm start)';
+                    app.insertBefore(bar, app.firstChild);
+                }
+                return;
+            }
+            initPythOracle();
+            updateDashboard();
+            updateWatchlist();
+            updatePriceAlerts();
+            startMarketEventPopups();
+            setInterval(updateOraclePrice, 5000); // Update oracle every 5 seconds
+            showToast('Welcome to Agrofix!', 'info');
+        }
+
+        window.addEventListener('load', () => {
+            const email = localStorage.getItem('userEmail');
+            if (email) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'block';
+                const name = email.split('@')[0];
+                document.getElementById('userAvatar').textContent = name.charAt(0).toUpperCase();
+                initApp();
+            }
+        });
+    </script>
+</body>
+</html>
