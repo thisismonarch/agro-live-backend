@@ -12,6 +12,18 @@ const paystack = require("./payments/paystack");
 const app = express();
 app.use(express.json());
 
+// --- CORS ---------------------------------------------------------------
+// Lets your GitHub Pages site (a different domain) call this API from the
+// browser. The endpoints below are read-only market data / health, so open
+// CORS is low-risk; tighten to your exact Pages origin if you prefer.
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+
 const PORT = process.env.PORT || 3000;
 
 // --- API: the assembled market (live where keys exist, sample otherwise) -----
