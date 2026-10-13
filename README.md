@@ -1,9 +1,17 @@
 # Agrofix — Live Market Intelligence
 
+**Live site:** https://agro-terminal.vercel.app · **Frontend repo:** https://github.com/thisismonarch/agro-live
+
 A deployable version of the Agrofix commodity terminal. A thin backend holds your
 API keys, fetches and **caches** market data, and serves the frontend. It runs
 today with **zero keys** (falling back to clearly-labelled sample data) and goes
 live the moment you add a commodity API key.
+
+## Status
+
+- **Frontend:** the terminal in `public/index.html` matches the frontend repo at [agro-live](https://github.com/thisismonarch/agro-live). It currently runs on hardcoded demo data and does **not** yet call `/api/market`. Connecting it to this backend is the next step.
+- **Backend:** runs on sample data until a commodity API key is added and the prices in `data/corridors.json` are verified.
+- **Not yet built:** wallet connection and on-chain USDC settlement. The Synthetic Markets module runs in demo mode.
 
 ## Architecture
 
