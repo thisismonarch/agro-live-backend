@@ -340,6 +340,22 @@ Updated: ${new Date().toLocaleTimeString()}
         
         .table-wrapper { overflow-x: auto; }
         .data-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        .digest { padding: 1.75rem; }
+        .digest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; }
+        .digest-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: var(--text-secondary); margin-bottom: 0.75rem; }
+        .mover { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.85rem 0; border-bottom: 1px solid var(--border-color); }
+        .mover:last-child { border-bottom: none; }
+        .mover-name { font-weight: 700; color: var(--text-primary); font-size: 15px; }
+        .mover-note { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+        .mover-change { font-weight: 800; font-size: 14px; padding: 0.3rem 0.7rem; border-radius: 999px; white-space: nowrap; }
+        .mover-change.up { color: var(--success-green); background: rgba(0,184,148,0.1); }
+        .mover-change.down { color: var(--danger-red); background: rgba(214,48,49,0.1); }
+        .watch-row { display: flex; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .watch-row:last-child { border-bottom: none; }
+        .watch-label { min-width: 72px; font-weight: 700; color: var(--primary-brown); }
+        .digest-foot { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; font-size: 13px; color: var(--text-secondary); }
+        .digest-upgrade { background: none; border: none; color: var(--gold-accent); font-weight: 700; cursor: pointer; padding: 0; font-size: 13px; }
+        @media (max-width: 768px) { .digest-grid { grid-template-columns: 1fr; gap: 1.5rem; } }
         .demo-note { background: #FFF6E5; border: 1px solid var(--gold-accent); border-radius: 10px; padding: 0.9rem 1.25rem; font-size: 13px; color: #7A4B00; margin-bottom: 1.75rem; }
         .trade-btn-short { background: linear-gradient(135deg, var(--danger-red), #B71C1C); }
         .soon-tag { display: inline-block; margin-left: 0.5rem; padding: 0.2rem 0.6rem; font-size: 11px; font-weight: 700; color: var(--teal-secondary); background: rgba(13,115,119,0.1); border-radius: 999px; vertical-align: middle; }
@@ -932,39 +948,35 @@ Updated: ${new Date().toLocaleTimeString()}
                 </div>
 
                 <div class="section">
-                    <div class="section-title">📰 Market Digest <span class="tier-badge tier-pro">Pro</span></div>
-                    <div id="dailyBriefCard" class="content-box" style="background:linear-gradient(135deg, rgba(243,156,18,0.05) 0%, rgba(52,152,219,0.05) 100%); border-left:4px solid var(--gold-accent); padding:1.2rem;">
-                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
-                            <!-- Movers -->
+                    <div class="section-title">Market Digest <span class="tier-badge tier-pro">Pro</span></div>
+                    <div id="dailyBriefCard" class="content-box digest">
+                        <div class="digest-grid">
                             <div>
-                                <div style="font-weight:600; font-size:0.95rem; color:var(--gold-accent); margin-bottom:0.8rem;">📈 Movers</div>
-                                <div id="briefMovers" style="font-size:0.9rem; line-height:1.8;">
-                                    <div style="color:#27ae60;">+ Maize <span style="float:right;">+2.1%</span></div>
-                                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.6rem;">US drought watch</div>
-                                    <div style="color:#27ae60;">+ Coffee <span style="float:right;">+3.4%</span></div>
-                                    <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:0.6rem;">Brazil frost risk</div>
-                                    <div style="color:#e74c3c;">- Cocoa <span style="float:right;">-1.2%</span></div>
-                                    <div style="font-size:0.8rem; color:var(--text-secondary);">Ivorian harvest ramp</div>
+                                <div class="digest-col-title">Movers</div>
+                                <div class="mover">
+                                    <div><div class="mover-name">Maize</div><div class="mover-note">US drought watch</div></div>
+                                    <span class="mover-change up">+2.1%</span>
+                                </div>
+                                <div class="mover">
+                                    <div><div class="mover-name">Coffee</div><div class="mover-note">Brazil frost risk</div></div>
+                                    <span class="mover-change up">+3.4%</span>
+                                </div>
+                                <div class="mover">
+                                    <div><div class="mover-name">Cocoa</div><div class="mover-note">Ivorian harvest ramp</div></div>
+                                    <span class="mover-change down">−1.2%</span>
                                 </div>
                             </div>
-
-                            <!-- Watch -->
                             <div>
-                                <div style="font-weight:600; font-size:0.95rem; color:var(--gold-accent); margin-bottom:0.8rem;">👁️ Watch</div>
-                                <div id="briefWatch" style="font-size:0.85rem; line-height:1.8; color:var(--text-secondary);">
-                                    <div>→ <strong>FX:</strong> Naira ₦1,652/$ (+0.3%)</div>
-                                    <div>→ <strong>EUDR:</strong> Cocoa traceability demand +15% YoY</div>
-                                    <div>→ <strong>Weather:</strong> Soybean (Argentina) — dry season extending</div>
-                                    <div>→ <strong>Risk:</strong> Black Sea corridor (wheat supply stable)</div>
-                                </div>
+                                <div class="digest-col-title">Watch</div>
+                                <div class="watch-row"><span class="watch-label">FX</span><span>Naira ₦1,652/$ (+0.3%)</span></div>
+                                <div class="watch-row"><span class="watch-label">EUDR</span><span>Cocoa traceability demand +15% YoY</span></div>
+                                <div class="watch-row"><span class="watch-label">Weather</span><span>Soybean (Argentina): dry season extending</span></div>
+                                <div class="watch-row"><span class="watch-label">Risk</span><span>Black Sea corridor: wheat supply stable</span></div>
                             </div>
                         </div>
-                        <div style="margin-top:1rem; padding-top:1rem; border-top:1px solid rgba(0,0,0,0.1); font-size:0.8rem; color:var(--text-secondary);">
-                            📡 Updated 2h ago • Data: Demo (not live)
-                            <span style="float:right;">
-                                <span style="color:#27ae60;">✓ Free preview</span> • 
-                                <button style="background:none; border:none; color:var(--gold-accent); cursor:pointer; font-weight:600; padding:0;" onclick="showToast('Pro tier gets daily 7am digest + SMS alerts', 'info')">Upgrade to Pro for daily at 7am</button>
-                            </span>
+                        <div class="digest-foot">
+                            <span>Demo data, not live. Figures are samples for preview.</span>
+                            <span>Free preview · <button type="button" class="digest-upgrade" onclick="showToast('Pro adds a daily 7am digest and SMS alerts (coming soon)', 'info')">Upgrade to Pro (coming soon)</button></span>
                         </div>
                     </div>
                 </div>
